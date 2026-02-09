@@ -3,28 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Khushi Mode</title>
+<title>Khushi Mode – Art Space</title>
 
 <style>
 body{
   margin:0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: system-ui, sans-serif;
   background: linear-gradient(135deg,#f5e9ff,#ffffff);
   text-align:center;
   padding:14px;
 }
 h1{color:#6b21a8;margin:6px 0;}
-#dayText{font-size:13px;color:#555;margin-bottom:8px;}
+#dayText{font-size:13px;color:#555;margin-bottom:6px;}
 
 .toolbar{
   display:flex;
   flex-wrap:wrap;
   justify-content:center;
   gap:8px;
-  margin-bottom:10px;
+  margin-bottom:8px;
 }
 
-button{
+button, select{
   padding:10px 14px;
   border-radius:18px;
   border:none;
@@ -42,32 +42,39 @@ canvas{
   cursor:crosshair;
 }
 
-#message{
-  font-size:13px;
-  color:#444;
-  min-height:18px;
-}
+#message{font-size:13px;color:#444;min-height:18px;}
 </style>
 </head>
 
 <body>
 
 <h1>KHUSHI MODE</h1>
-<div id="dayText"><h2>I Love YOU</h2></div>
+<div id="dayText"></div>
 
 <div class="toolbar">
-  <button onclick="setMode('paint')">🌈 Paint</button>
-  <button onclick="setMode('animated')">💫 Flow Brush</button>
+  <button onclick="setMode('flow')">💫 Flow</button>
   <button onclick="setMode('mandala')">🌀 Mandala</button>
+  <button onclick="setMode('mirror')">🪞 Mirror</button>
   <button onclick="setMode('trace')">🖋 Trace</button>
-  <button onclick="setMode('stamp')">✨ Doodle</button>
   <button onclick="undo()">↩ Undo</button>
 </div>
 
-<canvas id="canvas" width="460" height="460"></canvas>
+<div class="toolbar">
+  <select onchange="setMood(this.value)">
+    <option value="">Mood palette</option>
+    <option value="calm">Calm</option>
+    <option value="soft">Soft</option>
+    <option value="playful">Playful</option>
+    <option value="heavy">Heavy</option>
+    <option value="hopeful">Hopeful</option>
+  </select>
+  <button onclick="randomGradient()">🌈 Mix</button>
+</div>
+
+<canvas id="canvas" width="480" height="480"></canvas>
 
 <div class="toolbar">
-  <button onclick="nextTheme()">🎨 Theme</button>
+  <button onclick="nextDoodle()">🎲 Doodle Theme</button>
   <button onclick="toggleMusic()">🎵 Music</button>
   <button onclick="saveArt()">💾 Save</button>
   <button onclick="resetCanvas()">🌸 Reset</button>
@@ -80,167 +87,159 @@ canvas{
 </audio>
 
 <script>
-/* DAY COUNTER */
-const start = new Date("2024-01-01");
-document.getElementById("dayText").innerText =
-  `Day ${Math.floor((new Date()-start)/(1000*60*60*24))+1} — Welcome back`;
+/* DAY */
+const start=new Date("2024-01-01");
+dayText.innerText=`Day ${Math.floor((new Date()-start)/(1000*60*60*24))+1} — Welcome back`;
 
-/* CANVAS SETUP */
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-let drawing = false;
-let mode = "paint";
-let history = [];
-let hue = 0;
-let mandalaPoints = 12;
+/* CANVAS */
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+let drawing=false, mode="flow", history=[];
+let hue=0, mandalaPoints=12;
 
-/* THEMES */
-const themes = [
-  {name:"Lavender Mist", colors:["#ddd6fe","#c4b5fd","#a78bfa"]},
-  {name:"Petal Dream", colors:["#fda4af","#fecdd3","#f9a8d4"]},
-  {name:"Ocean Calm", colors:["#bae6fd","#7dd3fc","#38bdf8"]},
-  {name:"Sunrise Glow", colors:["#fde68a","#fbbf24","#f97316"]},
-  {name:"Mint Soft", colors:["#bbf7d0","#86efac","#4ade80"]}
-];
-let themeIndex = 0;
-let currentTheme = themes[0];
+/* PALETTES */
+let palette=["#ddd6fe","#c4b5fd","#a78bfa"];
+const moods={
+ calm:["#bae6fd","#7dd3fc","#38bdf8"],
+ soft:["#fbcfe8","#f9a8d4","#fecdd3"],
+ playful:["#fde68a","#fbbf24","#f97316"],
+ heavy:["#a5b4fc","#818cf8","#6366f1"],
+ hopeful:["#bbf7d0","#86efac","#4ade80"]
+};
 
-function nextTheme(){
-  themeIndex = (themeIndex+1)%themes.length;
-  currentTheme = themes[themeIndex];
-  msg("Theme: " + currentTheme.name);
-}
-
-/* INPUT HANDLERS */
+/* INPUT */
 canvas.addEventListener("mousedown",startDraw);
 canvas.addEventListener("mousemove",draw);
 canvas.addEventListener("mouseup",()=>drawing=false);
 canvas.addEventListener("mouseleave",()=>drawing=false);
-
 canvas.addEventListener("touchstart",startDraw);
 canvas.addEventListener("touchmove",draw);
 canvas.addEventListener("touchend",()=>drawing=false);
 
 function startDraw(e){
-  drawing = true;
-  history.push(canvas.toDataURL());
-  draw(e);
+ drawing=true;
+ history.push(canvas.toDataURL());
+ draw(e);
 }
 
 function draw(e){
-  if(!drawing) return;
-  const r = canvas.getBoundingClientRect();
-  const x = (e.touches ? e.touches[0].clientX : e.clientX) - r.left;
-  const y = (e.touches ? e.touches[0].clientY : e.clientY) - r.top;
+ if(!drawing)return;
+ const r=canvas.getBoundingClientRect();
+ const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
+ const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
 
-  if(mode==="paint") gradientDot(x,y);
-  if(mode==="animated") animatedBrush(x,y);
-  if(mode==="mandala") mandalaDraw(x,y);
-  if(mode==="stamp") stamp(x,y);
+ if(mode==="flow") flowBrush(x,y);
+ if(mode==="mandala") mandala(x,y);
+ if(mode==="mirror") mirrorDraw(x,y);
 }
 
-/* GRADIENT DOT */
-function gradientDot(x,y){
-  const g = ctx.createRadialGradient(x,y,2,x,y,30);
-  currentTheme.colors.forEach((c,i)=>{
-    g.addColorStop(i/(currentTheme.colors.length-1),c);
-  });
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(x,y,26,0,Math.PI*2);
-  ctx.fill();
+/* FLOW BRUSH */
+function flowBrush(x,y){
+ hue=(hue+1)%360;
+ const g=ctx.createRadialGradient(x,y,2,x,y,36);
+ g.addColorStop(0,`hsla(${hue},80%,70%,0.9)`);
+ g.addColorStop(1,`hsla(${hue+40},80%,60%,0.15)`);
+ ctx.fillStyle=g;
+ ctx.beginPath();
+ ctx.arc(x,y,30,0,Math.PI*2);
+ ctx.fill();
 }
 
-/* ANIMATED GRADIENT BRUSH */
-function animatedBrush(x,y){
-  hue = (hue + 1) % 360;
-  const g = ctx.createRadialGradient(x,y,2,x,y,30);
-  g.addColorStop(0,`hsla(${hue},80%,70%,0.9)`);
-  g.addColorStop(1,`hsla(${hue+40},80%,60%,0.25)`);
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.arc(x,y,26,0,Math.PI*2);
-  ctx.fill();
+/* MANDALA */
+function mandala(x,y){
+ const cx=canvas.width/2, cy=canvas.height/2;
+ const dx=x-cx, dy=y-cy;
+ for(let i=0;i<mandalaPoints;i++){
+  const a=(Math.PI*2/mandalaPoints)*i;
+  flowBrush(cx+dx*Math.cos(a)-dy*Math.sin(a),
+            cy+dx*Math.sin(a)+dy*Math.cos(a));
+ }
 }
 
-/* MANDALA DRAW */
-function mandalaDraw(x,y){
-  const cx = canvas.width/2;
-  const cy = canvas.height/2;
-  const dx = x - cx;
-  const dy = y - cy;
-
-  for(let i=0;i<mandalaPoints;i++){
-    const a = (Math.PI*2/mandalaPoints)*i;
-    const rx = cx + dx*Math.cos(a) - dy*Math.sin(a);
-    const ry = cy + dx*Math.sin(a) + dy*Math.cos(a);
-    animatedBrush(rx,ry);
-  }
+/* MIRROR */
+function mirrorDraw(x,y){
+ flowBrush(x,y);
+ flowBrush(canvas.width-x,y);
 }
 
-/* DOODLE STAMP */
-function stamp(x,y){
-  ctx.strokeStyle = currentTheme.colors[Math.floor(Math.random()*currentTheme.colors.length)];
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(x,y,20,Math.random()*Math.PI,Math.random()*Math.PI*2);
-  ctx.stroke();
-}
-
-/* TRACE MODE */
+/* TRACE */
 function setMode(m){
-  mode = m;
-  msg("Mode: " + m);
-  if(m==="trace") drawGhost();
+ mode=m;
+ msg("Mode: "+m);
+ if(m==="trace") ghost();
 }
 
-function drawGhost(){
-  ctx.save();
-  ctx.globalAlpha = 0.15;
-  ctx.strokeStyle = "#999";
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(80,230);
-  ctx.bezierCurveTo(160,80,300,380,380,230);
-  ctx.stroke();
-  ctx.restore();
+function ghost(){
+ ctx.save();
+ ctx.globalAlpha=0.15;
+ ctx.strokeStyle="#999";
+ ctx.lineWidth=4;
+ ctx.beginPath();
+ ctx.moveTo(90,240);
+ ctx.bezierCurveTo(180,80,300,400,390,240);
+ ctx.stroke();
+ ctx.restore();
+}
+
+/* DOODLES */
+const doodles=[
+ "Flow in circles",
+ "Petal loops",
+ "Spiral release",
+ "Wave lines",
+ "Heart rhythm"
+];
+let d=0;
+function nextDoodle(){
+ d=(d+1)%doodles.length;
+ msg("Doodle: "+doodles[d]);
+}
+
+/* PALETTE */
+function setMood(m){
+ if(moods[m]) palette=moods[m];
+ msg("Mood palette set");
+}
+function randomGradient(){
+ palette=[`hsl(${Math.random()*360},80%,70%)`,
+          `hsl(${Math.random()*360},80%,60%)`,
+          `hsl(${Math.random()*360},80%,50%)`];
+ msg("Mixed gradient 🎨");
 }
 
 /* UNDO */
 function undo(){
-  if(!history.length) return;
-  const img = new Image();
-  img.src = history.pop();
-  img.onload = ()=>ctx.drawImage(img,0,0);
-}
-
-/* RESET */
-function resetCanvas(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  history=[];
-  msg("Fresh canvas 🌸");
+ if(!history.length)return;
+ const img=new Image();
+ img.src=history.pop();
+ img.onload=()=>ctx.drawImage(img,0,0);
 }
 
 /* SAVE */
 function saveArt(){
-  const a=document.createElement("a");
-  a.download="khushi-art.png";
-  a.href=canvas.toDataURL();
-  a.click();
+ const a=document.createElement("a");
+ a.download="khushi-art.png";
+ a.href=canvas.toDataURL();
+ a.click();
+}
+
+/* RESET */
+function resetCanvas(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ history=[];
+ msg("Fresh canvas 🌸");
 }
 
 /* MUSIC */
 const music=document.getElementById("bgMusic");
-let playing=false;
+let play=false;
 function toggleMusic(){
-  playing ? music.pause() : music.play();
-  playing = !playing;
+ play?music.pause():music.play();
+ play=!play;
 }
 
-/* MESSAGE */
-function msg(t){
-  document.getElementById("message").innerText=t;
-}
+/* MSG */
+function msg(t){message.innerText=t;}
 </script>
 
 </body>
