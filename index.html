@@ -11,20 +11,23 @@ body{
   font-family: system-ui, sans-serif;
   background: linear-gradient(135deg,#f5e9ff,#ffffff);
   text-align:center;
-  padding:14px;
+  padding:20px;
 }
 h1{color:#6b21a8;margin:6px 0;}
-#dayText{font-size:13px;color:#555;margin-bottom:6px;}
+#dayText{font-size:13px;color:#555;margin-bottom:10px;}
+
+.section{
+  margin-bottom:12px;
+}
 
 .toolbar{
   display:flex;
   flex-wrap:wrap;
   justify-content:center;
-  gap:8px;
-  margin-bottom:8px;
+  gap:10px;
 }
 
-button,input{
+button,input,select{
   padding:10px 14px;
   border-radius:18px;
   border:none;
@@ -33,24 +36,35 @@ button,input{
   cursor:pointer;
 }
 
-label{
-  font-size:12px;
-  color:#444;
-}
-
 canvas{
   background:#fff;
-  border-radius:22px;
+  border-radius:26px;
   display:block;
-  margin:10px auto;
+  margin:14px auto;
   touch-action:none;
   cursor:crosshair;
+  box-shadow:0 8px 24px rgba(0,0,0,0.08);
 }
 
 #message{
   font-size:13px;
   color:#444;
   min-height:18px;
+}
+
+/* GALLERY */
+.gallery{
+  display:flex;
+  gap:10px;
+  overflow-x:auto;
+  padding:10px;
+}
+.gallery img{
+  width:80px;
+  height:80px;
+  border-radius:14px;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
 </style>
 </head>
@@ -60,64 +74,57 @@ canvas{
 <h1>KHUSHI MODE</h1>
 <div id="dayText"></div>
 
-<!-- MODE CONTROLS -->
-<div class="toolbar">
+<div class="section toolbar">
   <button onclick="setMode('paint')">🎨 Paint</button>
   <button onclick="setMode('flow')">💫 Flow</button>
   <button onclick="setMode('mandala')">🌀 Mandala</button>
-  <button onclick="setMode('doodle')">✏️ Doodle</button>
+  <button onclick="setMode('symmetry')">🪞 Symmetry</button>
   <button onclick="undo()">↩ Undo</button>
 </div>
 
-<!-- TOOL CONTROLS -->
-<div class="toolbar">
-  <label>Color</label>
+<div class="section toolbar">
+  <select onchange="setMandala(this.value)">
+    <option value="classic">Mandala: Classic</option>
+    <option value="petal">Petal</option>
+    <option value="spiral">Spiral</option>
+    <option value="dots">Dot</option>
+    <option value="kaleido">Kaleidoscope</option>
+  </select>
+
   <input type="color" id="colorPicker" value="#8b5cf6">
-
-  <label>Size</label>
   <input type="range" id="sizeSlider" min="4" max="50" value="24">
-
-  <button onclick="toggleGradient()">🌈 Gradient</button>
+  <button onclick="toggleTexture()">🧵 Texture</button>
 </div>
 
-<canvas id="canvas" width="500" height="500"></canvas>
+<canvas id="canvas" width="520" height="520"></canvas>
 
-<div class="toolbar">
-  <button onclick="nextDoodle()">🎲 Doodle Type</button>
-  <button onclick="toggleMusic()">🎵 Music</button>
+<div class="section toolbar">
   <button onclick="saveArt()">💾 Save</button>
   <button onclick="resetCanvas()">🌸 Reset</button>
 </div>
 
 <div id="message"></div>
 
-<audio id="bgMusic" loop>
-  <source src="music.mp3" type="audio/mpeg">
-</audio>
+<div class="gallery" id="gallery"></div>
 
 <script>
 /* DAY */
 const start=new Date("2024-01-01");
-dayText.innerText =
-`Day ${Math.floor((new Date()-start)/(1000*60*60*24))+1} — Welcome back`;
+dayText.innerText=`Day ${Math.floor((new Date()-start)/(1000*60*60*24))+1} — Welcome back`;
 
 /* CANVAS */
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
-let drawing=false;
-let mode="paint";
-let history=[];
-
-let brushSize=24;
-let baseColor="#8b5cf6";
-let useGradient=true;
-let hue=0;
+let drawing=false, mode="paint", history=[];
+let brushSize=24, baseColor="#8b5cf6";
+let useTexture=false, hue=0;
+let mandalaType="classic";
 
 /* INPUTS */
 sizeSlider.oninput=e=>brushSize=+e.target.value;
 colorPicker.oninput=e=>baseColor=e.target.value;
 
-/* INPUT HANDLING */
+/* DRAW EVENTS */
 canvas.addEventListener("mousedown",startDraw);
 canvas.addEventListener("mousemove",draw);
 canvas.addEventListener("mouseup",()=>drawing=false);
@@ -139,111 +146,86 @@ function draw(e){
   const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
   const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
 
-  if(mode==="paint") paintDot(x,y);
-  if(mode==="flow") flowBrush(x,y);
-  if(mode==="mandala") mandalaDraw(x,y);
-  if(mode==="doodle") doodleDraw(x,y);
+  if(mode==="paint") paint(x,y);
+  if(mode==="flow") flow(x,y);
+  if(mode==="symmetry") symmetry(x,y);
+  if(mode==="mandala") mandala(x,y);
 }
 
 /* PAINT */
-function paintDot(x,y){
-  ctx.fillStyle = makeFill(x,y);
+function paint(x,y){
+  ctx.fillStyle=makeFill(x,y);
   ctx.beginPath();
   ctx.arc(x,y,brushSize,0,Math.PI*2);
   ctx.fill();
 }
 
 /* FLOW */
-function flowBrush(x,y){
+function flow(x,y){
   hue=(hue+1)%360;
-  ctx.fillStyle = makeFill(x,y,true);
+  ctx.fillStyle=`hsla(${hue},80%,70%,0.6)`;
   ctx.beginPath();
   ctx.arc(x,y,brushSize*1.1,0,Math.PI*2);
   ctx.fill();
 }
 
+/* SYMMETRY */
+function symmetry(x,y){
+  paint(x,y);
+  paint(canvas.width-x,y);
+}
+
 /* MANDALA */
-function mandalaDraw(x,y){
+function mandala(x,y){
   const cx=canvas.width/2, cy=canvas.height/2;
   const dx=x-cx, dy=y-cy;
-  for(let i=0;i<12;i++){
-    const a=(Math.PI*2/12)*i;
-    paintDot(
-      cx+dx*Math.cos(a)-dy*Math.sin(a),
-      cy+dx*Math.sin(a)+dy*Math.cos(a)
-    );
+  const points=12;
+  for(let i=0;i<points;i++){
+    const a=(Math.PI*2/points)*i;
+    let rx=cx+dx*Math.cos(a)-dy*Math.sin(a);
+    let ry=cy+dx*Math.sin(a)+dy*Math.cos(a);
+    if(mandalaType==="spiral") rx+=i*2, ry+=i*2;
+    paint(rx,ry);
   }
 }
 
-/* DOODLE (REAL VARIATION) */
-const doodleTypes=["spiral","wave","petal","zigzag"];
-let doodleIndex=0;
-
-function doodleDraw(x,y){
-  ctx.strokeStyle = makeFill(x,y);
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-
-  if(doodleTypes[doodleIndex]==="spiral"){
-    ctx.arc(x,y,brushSize,0,Math.PI*1.5);
-  }
-  if(doodleTypes[doodleIndex]==="wave"){
-    ctx.moveTo(x-brushSize,y);
-    ctx.quadraticCurveTo(x,y-brushSize,x+brushSize,y);
-  }
-  if(doodleTypes[doodleIndex]==="petal"){
-    ctx.ellipse(x,y,brushSize,brushSize/2,Math.random(),0,Math.PI*2);
-  }
-  if(doodleTypes[doodleIndex]==="zigzag"){
-    ctx.moveTo(x-brushSize,y-brushSize);
-    ctx.lineTo(x,y+brushSize);
-    ctx.lineTo(x+brushSize,y-brushSize);
-  }
-
-  ctx.stroke();
+/* MANDALA TYPE */
+function setMandala(t){
+  mandalaType=t;
+  msg("Mandala: "+t);
 }
 
-/* DOODLE CHANGE */
-function nextDoodle(){
-  doodleIndex=(doodleIndex+1)%doodleTypes.length;
-  msg("Doodle: "+doodleTypes[doodleIndex]);
+/* TEXTURE */
+function toggleTexture(){
+  useTexture=!useTexture;
+  msg(useTexture?"Texture ON":"Texture OFF");
 }
 
 /* FILL */
-function makeFill(x,y,animated=false){
-  if(!useGradient){
-    return baseColor;
-  }
+function makeFill(x,y){
+  if(!useTexture) return baseColor;
   const g=ctx.createRadialGradient(x,y,2,x,y,brushSize*1.5);
-  if(animated){
-    g.addColorStop(0,`hsla(${hue},80%,70%,0.9)`);
-    g.addColorStop(1,baseColor);
-  }else{
-    g.addColorStop(0,baseColor);
-    g.addColorStop(1,"transparent");
-  }
+  g.addColorStop(0,baseColor);
+  g.addColorStop(1,"rgba(0,0,0,0.1)");
   return g;
-}
-
-function toggleGradient(){
-  useGradient=!useGradient;
-  msg(useGradient?"Gradient ON":"Gradient OFF");
 }
 
 /* UNDO */
 function undo(){
-  if(!history.length) return;
+  if(!history.length)return;
   const img=new Image();
   img.src=history.pop();
   img.onload=()=>ctx.drawImage(img,0,0);
 }
 
-/* SAVE */
+/* SAVE + GALLERY */
 function saveArt(){
-  const a=document.createElement("a");
-  a.download="khushi-art.png";
-  a.href=canvas.toDataURL();
-  a.click();
+  const data=canvas.toDataURL();
+  const img=document.createElement("img");
+  img.src=data;
+  img.onclick=()=>window.open(data);
+  gallery.prepend(img);
+  msg("Saved ✨");
 }
 
 /* RESET */
@@ -253,14 +235,6 @@ function resetCanvas(){
   msg("Fresh canvas 🌸");
 }
 
-/* MUSIC */
-const music=document.getElementById("bgMusic");
-let play=false;
-function toggleMusic(){
-  play?music.pause():music.play();
-  play=!play;
-}
-
 /* MODE */
 function setMode(m){
   mode=m;
@@ -268,9 +242,7 @@ function setMode(m){
 }
 
 /* MSG */
-function msg(t){
-  message.innerText=t;
-}
+function msg(t){message.innerText=t;}
 </script>
 
 </body>
