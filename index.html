@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Khushi Mode</title>
 
 <style>
@@ -13,12 +13,10 @@ body{
   text-align:center;
   padding:20px;
 }
-h1{color:#6b21a8;margin:6px 0;}
-#dayText{font-size:13px;color:#555;margin-bottom:10px;}
+h1{color:#6b21a8;margin:8px 0;}
+#dayText{font-size:13px;color:#555;margin-bottom:14px;}
 
-.section{
-  margin-bottom:12px;
-}
+.section{margin-bottom:14px;}
 
 .toolbar{
   display:flex;
@@ -40,10 +38,10 @@ canvas{
   background:#fff;
   border-radius:26px;
   display:block;
-  margin:14px auto;
+  margin:16px auto;
   touch-action:none;
   cursor:crosshair;
-  box-shadow:0 8px 24px rgba(0,0,0,0.08);
+  box-shadow:0 10px 28px rgba(0,0,0,0.08);
 }
 
 #message{
@@ -60,11 +58,11 @@ canvas{
   padding:10px;
 }
 .gallery img{
-  width:80px;
-  height:80px;
-  border-radius:14px;
+  width:90px;
+  height:90px;
+  border-radius:16px;
   cursor:pointer;
-  box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  box-shadow:0 4px 14px rgba(0,0,0,0.12);
 }
 </style>
 </head>
@@ -74,62 +72,83 @@ canvas{
 <h1>KHUSHI MODE</h1>
 <div id="dayText"></div>
 
+<!-- MODES -->
 <div class="section toolbar">
   <button onclick="setMode('paint')">🎨 Paint</button>
   <button onclick="setMode('flow')">💫 Flow</button>
+  <button onclick="setMode('doodle')">✏️ Doodle</button>
   <button onclick="setMode('mandala')">🌀 Mandala</button>
   <button onclick="setMode('symmetry')">🪞 Symmetry</button>
   <button onclick="undo()">↩ Undo</button>
 </div>
 
+<!-- TOOLS -->
 <div class="section toolbar">
-  <select onchange="setMandala(this.value)">
-    <option value="classic">Mandala: Classic</option>
+  <label>Color</label>
+  <input type="color" id="colorPicker" value="#8b5cf6">
+  <label>Size</label>
+  <input type="range" id="sizeSlider" min="4" max="50" value="24">
+  <button onclick="toggleGradient()">🌈 Gradient</button>
+  <button onclick="toggleTexture()">🧵 Texture</button>
+</div>
+
+<!-- EXTRA OPTIONS -->
+<div class="section toolbar">
+  <select onchange="setDoodle(this.value)">
+    <option value="spiral">Doodle: Spiral</option>
     <option value="petal">Petal</option>
-    <option value="spiral">Spiral</option>
-    <option value="dots">Dot</option>
-    <option value="kaleido">Kaleidoscope</option>
+    <option value="wave">Wave</option>
+    <option value="dots">Zen Dots</option>
   </select>
 
-  <input type="color" id="colorPicker" value="#8b5cf6">
-  <input type="range" id="sizeSlider" min="4" max="50" value="24">
-  <button onclick="toggleTexture()">🧵 Texture</button>
+  <select onchange="setMandala(this.value)">
+    <option value="classic">Mandala: Classic</option>
+    <option value="flower">Flower</option>
+    <option value="spiral">Spiral</option>
+    <option value="dots">Dot</option>
+  </select>
+
+  <label>Symmetry</label>
+  <input type="range" min="4" max="24" value="12" id="symmetrySlider">
 </div>
 
 <canvas id="canvas" width="520" height="520"></canvas>
 
 <div class="section toolbar">
+  <button onclick="toggleMusic()">🎵 Music</button>
   <button onclick="saveArt()">💾 Save</button>
   <button onclick="resetCanvas()">🌸 Reset</button>
 </div>
 
 <div id="message"></div>
-
 <div class="gallery" id="gallery"></div>
+
+<audio id="bgMusic" loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
 
 <script>
 /* DAY */
 const start=new Date("2024-01-01");
 dayText.innerText=`Day ${Math.floor((new Date()-start)/(1000*60*60*24))+1} — Welcome back`;
 
-/* CANVAS */
+/* STATE */
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 let drawing=false, mode="paint", history=[];
 let brushSize=24, baseColor="#8b5cf6";
-let useTexture=false, hue=0;
-let mandalaType="classic";
+let useGradient=true, useTexture=false;
+let hue=0, doodleType="spiral", mandalaType="classic";
 
 /* INPUTS */
 sizeSlider.oninput=e=>brushSize=+e.target.value;
 colorPicker.oninput=e=>baseColor=e.target.value;
 
-/* DRAW EVENTS */
+/* EVENTS */
 canvas.addEventListener("mousedown",startDraw);
 canvas.addEventListener("mousemove",draw);
 canvas.addEventListener("mouseup",()=>drawing=false);
 canvas.addEventListener("mouseleave",()=>drawing=false);
-
 canvas.addEventListener("touchstart",startDraw);
 canvas.addEventListener("touchmove",draw);
 canvas.addEventListener("touchend",()=>drawing=false);
@@ -148,11 +167,20 @@ function draw(e){
 
   if(mode==="paint") paint(x,y);
   if(mode==="flow") flow(x,y);
-  if(mode==="symmetry") symmetry(x,y);
+  if(mode==="doodle") doodle(x,y);
   if(mode==="mandala") mandala(x,y);
+  if(mode==="symmetry") symmetry(x,y);
 }
 
-/* PAINT */
+/* BRUSHES */
+function makeFill(x,y){
+  if(!useGradient) return baseColor;
+  const g=ctx.createRadialGradient(x,y,2,x,y,brushSize*1.5);
+  g.addColorStop(0,baseColor);
+  g.addColorStop(1,"transparent");
+  return g;
+}
+
 function paint(x,y){
   ctx.fillStyle=makeFill(x,y);
   ctx.beginPath();
@@ -160,13 +188,36 @@ function paint(x,y){
   ctx.fill();
 }
 
-/* FLOW */
 function flow(x,y){
   hue=(hue+1)%360;
   ctx.fillStyle=`hsla(${hue},80%,70%,0.6)`;
   ctx.beginPath();
-  ctx.arc(x,y,brushSize*1.1,0,Math.PI*2);
+  ctx.arc(x,y,brushSize*1.2,0,Math.PI*2);
   ctx.fill();
+}
+
+/* DOODLE */
+function doodle(x,y){
+  ctx.strokeStyle=baseColor;
+  ctx.lineWidth=3;
+  ctx.beginPath();
+  if(doodleType==="spiral") ctx.arc(x,y,brushSize,0,Math.PI*1.5);
+  if(doodleType==="petal") ctx.ellipse(x,y,brushSize,brushSize/2,Math.random(),0,Math.PI*2);
+  if(doodleType==="wave") ctx.quadraticCurveTo(x,y-brushSize,x+brushSize,y);
+  if(doodleType==="dots") ctx.arc(x,y,brushSize/3,0,Math.PI*2);
+  ctx.stroke();
+}
+
+/* MANDALA */
+function mandala(x,y){
+  const cx=canvas.width/2, cy=canvas.height/2;
+  const dx=x-cx, dy=y-cy;
+  const points=+symmetrySlider.value;
+  for(let i=0;i<points;i++){
+    const a=(Math.PI*2/points)*i;
+    paint(cx+dx*Math.cos(a)-dy*Math.sin(a),
+          cy+dx*Math.sin(a)+dy*Math.cos(a));
+  }
 }
 
 /* SYMMETRY */
@@ -175,40 +226,12 @@ function symmetry(x,y){
   paint(canvas.width-x,y);
 }
 
-/* MANDALA */
-function mandala(x,y){
-  const cx=canvas.width/2, cy=canvas.height/2;
-  const dx=x-cx, dy=y-cy;
-  const points=12;
-  for(let i=0;i<points;i++){
-    const a=(Math.PI*2/points)*i;
-    let rx=cx+dx*Math.cos(a)-dy*Math.sin(a);
-    let ry=cy+dx*Math.sin(a)+dy*Math.cos(a);
-    if(mandalaType==="spiral") rx+=i*2, ry+=i*2;
-    paint(rx,ry);
-  }
-}
-
-/* MANDALA TYPE */
-function setMandala(t){
-  mandalaType=t;
-  msg("Mandala: "+t);
-}
-
-/* TEXTURE */
-function toggleTexture(){
-  useTexture=!useTexture;
-  msg(useTexture?"Texture ON":"Texture OFF");
-}
-
-/* FILL */
-function makeFill(x,y){
-  if(!useTexture) return baseColor;
-  const g=ctx.createRadialGradient(x,y,2,x,y,brushSize*1.5);
-  g.addColorStop(0,baseColor);
-  g.addColorStop(1,"rgba(0,0,0,0.1)");
-  return g;
-}
+/* SETTINGS */
+function setMode(m){mode=m;msg("Mode: "+m);}
+function setDoodle(d){doodleType=d;msg("Doodle: "+d);}
+function setMandala(m){mandalaType=m;msg("Mandala: "+m);}
+function toggleGradient(){useGradient=!useGradient;msg("Gradient "+(useGradient?"ON":"OFF"));}
+function toggleTexture(){useTexture=!useTexture;msg("Texture "+(useTexture?"ON":"OFF"));}
 
 /* UNDO */
 function undo(){
@@ -218,7 +241,7 @@ function undo(){
   img.onload=()=>ctx.drawImage(img,0,0);
 }
 
-/* SAVE + GALLERY */
+/* SAVE */
 function saveArt(){
   const data=canvas.toDataURL();
   const img=document.createElement("img");
@@ -235,13 +258,15 @@ function resetCanvas(){
   msg("Fresh canvas 🌸");
 }
 
-/* MODE */
-function setMode(m){
-  mode=m;
-  msg("Mode: "+m);
+/* MUSIC */
+const music=document.getElementById("bgMusic");
+let play=false;
+function toggleMusic(){
+  play?music.pause():music.play();
+  play=!play;
 }
 
-/* MSG */
+/* MESSAGE */
 function msg(t){message.innerText=t;}
 </script>
 
