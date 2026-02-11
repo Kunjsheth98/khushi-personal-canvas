@@ -1,329 +1,312 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Khushi Mode</title>
-
 <style>
 body{
-  margin:0;
-  font-family: system-ui, sans-serif;
-  background: linear-gradient(135deg,#f5e9ff,#ffffff);
-  text-align:center;
-  padding:14px;
+margin:0;
+font-family:system-ui;
+background:linear-gradient(135deg,#f3e8ff,#ffffff);
+text-align:center;
+padding:12px;
 }
-h1{color:#6b21a8;margin:6px 0;}
-#dayText{font-size:13px;color:#555;}
-#modeDisplay{
-  margin:6px 0 10px;
-  font-size:14px;
-  font-weight:600;
-  color:#7c3aed;
-}
-#prompt{
-  font-size:14px;
-  margin-bottom:12px;
-  color:#444;
-}
-
+h1{color:#6d28d9;margin:4px;}
+#modeDisplay{font-weight:600;color:#7c3aed;margin-bottom:6px;}
+#challenge{margin-bottom:8px;color:#444;font-size:14px;}
 .bar{
-  display:flex;
-  flex-wrap:wrap;
-  justify-content:center;
-  gap:10px;
-  margin-bottom:10px;
+display:flex;
+flex-wrap:wrap;
+justify-content:center;
+gap:8px;
+margin-bottom:8px;
 }
-
-button, select, input{
-  padding:10px 14px;
-  border-radius:18px;
-  border:none;
-  background:#ede9fe;
-  font-size:14px;
-  cursor:pointer;
+button,input,select{
+padding:8px 12px;
+border-radius:18px;
+border:none;
+background:#ede9fe;
+font-size:13px;
 }
-
 canvas{
-  background:#fff;
-  border-radius:26px;
-  display:block;
-  margin:14px auto;
-  width:96vw;
-  max-width:520px;
-  height:96vw;
-  max-height:520px;
-  touch-action:none;
-  box-shadow:0 10px 28px rgba(0,0,0,0.08);
+background:#fff;
+border-radius:26px;
+box-shadow:0 10px 28px rgba(0,0,0,0.08);
+touch-action:none;
+display:block;
+margin:10px auto;
 }
-
-/* GALLERY */
 #gallery{
-  display:flex;
-  gap:10px;
-  overflow-x:auto;
-  padding:10px;
-  justify-content:flex-start;
+display:flex;
+gap:8px;
+overflow-x:auto;
+padding:8px;
 }
 #gallery img{
-  width:90px;
-  height:90px;
-  border-radius:16px;
-  cursor:pointer;
-  box-shadow:0 4px 14px rgba(0,0,0,0.12);
+width:80px;
+height:80px;
+border-radius:14px;
+cursor:pointer;
 }
 </style>
 </head>
-
 <body>
 
 <h1>KHUSHI MODE</h1>
-<div id="dayText"></div>
 <div id="modeDisplay">Mode: Paint</div>
-<div id="prompt"></div>
+<div id="challenge"></div>
 
-<!-- MODE BAR -->
 <div class="bar">
-  <button onclick="setMode('paint')">🎨 Paint</button>
-  <button onclick="setMode('mandala')">🌀 Mandala</button>
-  <button onclick="setMode('doodle')">✏️ Doodle</button>
-  <button onclick="setMode('wave')">🌊 Wave</button>
-  <button onclick="setMode('orbit')">🧬 Orbit</button>
-  <button onclick="setMode('breathe')">🌬️ Breathe</button>
+<button onclick="setMode('paint')">🎨</button>
+<button onclick="setMode('mandala')">🌀</button>
+<button onclick="setMode('doodle')">✏️</button>
+<button onclick="setMode('galaxy')">🌌</button>
+<button onclick="setMode('bloom')">🌺</button>
+<button onclick="setMode('silk')">🧵</button>
+<button onclick="setMode('orbit')">🧬</button>
+<button onclick="setMode('breathe')">🌬️</button>
+<button onclick="setMode('teddy')">🧸</button>
 </div>
 
-<!-- TOOL BAR -->
 <div class="bar">
-  <input type="color" id="color1" value="#8b5cf6">
-  <input type="color" id="color2" value="#ec4899">
-  <button onclick="toggleGradient()">🌈 Gradient</button>
-  <input type="range" id="sizeSlider" min="6" max="50" value="24">
+<input type="color" id="c1" value="#8b5cf6">
+<input type="color" id="c2" value="#ec4899">
+<button onclick="toggleGradient()">🌈</button>
+<input type="range" id="size" min="4" max="60" value="20">
 </div>
 
-<!-- STYLE BAR -->
 <div class="bar">
-  <select id="mandalaSelect">
-    <option value="classic">Mandala: Classic</option>
-    <option value="flower">Flower</option>
-    <option value="spiral">Spiral</option>
-    <option value="kaleido">Kaleidoscope</option>
-  </select>
-
-  <select id="doodleSelect">
-    <option value="ribbon">Doodle: Ribbon</option>
-    <option value="infinity">Infinity</option>
-    <option value="leaf">Leaf</option>
-    <option value="zen">Zen Dots</option>
-  </select>
+<input type="range" id="symmetry" min="4" max="24" value="12">
+<span>Symmetry</span>
+<select id="mandalaStyle">
+<option value="classic">Classic</option>
+<option value="flower">Flower</option>
+<option value="spiral">Spiral</option>
+<option value="kaleido">Kaleido</option>
+<option value="dots">Dots</option>
+</select>
 </div>
 
-<canvas id="canvas" width="520" height="520"></canvas>
+<canvas id="canvas"></canvas>
 
-<!-- ACTION BAR -->
 <div class="bar">
-  <button onclick="undo()">↩ Undo</button>
-  <button onclick="toggleMusic()">🎵 Music</button>
-  <button onclick="resetCanvas()">♻️ Reset</button>
-  <button onclick="saveArt()">💾 Save</button>
+<button onclick="undo()">↩</button>
+<button onclick="toggleMusic()">🎵</button>
+<button onclick="resetCanvas()">♻</button>
+<button onclick="saveArt()">💾</button>
+<button onclick="exportSticker()">🎟 Sticker</button>
 </div>
 
-<!-- GALLERY -->
 <div id="gallery"></div>
 
-<audio id="bgMusic" loop>
-  <source src="music.mp3" type="audio/mpeg">
+<audio id="music" loop>
+<source src="music.mp3">
 </audio>
 
 <script>
-/* DAY + PROMPT */
-const start=new Date("2024-01-01");
-dayText.innerText=`Day ${Math.floor((new Date()-start)/(1000*60*60*24))+1} — Welcome back`;
-
-const prompts=[
- "Draw how calm feels today.",
- "Create something soft and kind.",
- "Let your lines breathe slowly.",
- "Draw without planning.",
- "Make something only you understand.",
- "Draw peace, not perfection."
-];
-prompt.innerText="🖌️ Today’s prompt: "+prompts[new Date().getDate()%prompts.length];
-
-/* STATE */
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 
-let drawing=false;
-let mode="paint";
-let history=[];
+function resize(){
+let size=Math.min(window.innerWidth*0.92,520);
+canvas.width=size;
+canvas.height=size;
+}
+resize();
+window.addEventListener("resize",resize);
 
-let useGradient=true;
-const color1=document.getElementById("color1");
-const color2=document.getElementById("color2");
-const sizeSlider=document.getElementById("sizeSlider");
+let drawing=false,mode="paint",history=[];
+let gradient=true,teddyStage=0,breathPhase=0;
 
-const mandalaSelect=document.getElementById("mandalaSelect");
-const doodleSelect=document.getElementById("doodleSelect");
+const c1=document.getElementById("c1");
+const c2=document.getElementById("c2");
+const sizeSlider=document.getElementById("size");
+const symmetrySlider=document.getElementById("symmetry");
+const mandalaStyle=document.getElementById("mandalaStyle");
 
-let breathPhase=0;
+function setMode(m){
+mode=m;
+modeDisplay.innerText="Mode: "+m;
+}
 
-/* EVENTS */
-canvas.addEventListener("mousedown",startDraw);
+function toggleGradient(){gradient=!gradient;}
+
+function getPos(e){
+const rect=canvas.getBoundingClientRect();
+return{
+x:(e.touches?e.touches[0].clientX:e.clientX)-rect.left,
+y:(e.touches?e.touches[0].clientY:e.clientY)-rect.top
+};
+}
+
+canvas.addEventListener("mousedown",e=>{drawing=true;history.push(canvas.toDataURL());draw(e);});
 canvas.addEventListener("mousemove",draw);
 canvas.addEventListener("mouseup",()=>drawing=false);
-canvas.addEventListener("touchstart",startDraw,{passive:false});
+canvas.addEventListener("touchstart",e=>{drawing=true;history.push(canvas.toDataURL());draw(e);},{passive:false});
 canvas.addEventListener("touchmove",draw,{passive:false});
 canvas.addEventListener("touchend",()=>drawing=false);
 
-function setMode(m){
-  mode=m;
-  modeDisplay.innerText="Mode: "+m.charAt(0).toUpperCase()+m.slice(1);
-}
-
-function toggleGradient(){
-  useGradient=!useGradient;
-}
-
-function startDraw(e){
-  drawing=true;
-  history.push(canvas.toDataURL());
-  draw(e);
+function brush(x,y){
+if(!gradient)return c1.value;
+let g=ctx.createLinearGradient(x-30,y-30,x+30,y+30);
+g.addColorStop(0,c1.value);
+g.addColorStop(1,c2.value);
+return g;
 }
 
 function draw(e){
-  if(!drawing) return;
-  const r=canvas.getBoundingClientRect();
-  const x=(e.touches?e.touches[0].clientX:e.clientX)-r.left;
-  const y=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+if(!drawing)return;
+let {x,y}=getPos(e);
 
-  if(mode==="paint") paint(x,y);
-  if(mode==="mandala") mandala(x,y);
-  if(mode==="doodle") doodle(x,y);
-  if(mode==="wave") wave(x,y);
-  if(mode==="orbit") orbit(x,y);
-  if(mode==="breathe") breathe(x,y);
+if(mode==="paint"){
+ctx.fillStyle=brush(x,y);
+ctx.beginPath();
+ctx.arc(x,y,sizeSlider.value,0,Math.PI*2);
+ctx.fill();
 }
 
-function brushFill(x,y){
-  if(!useGradient) return color1.value;
-  const g=ctx.createLinearGradient(
-    x-sizeSlider.value,
-    y-sizeSlider.value,
-    x+sizeSlider.value,
-    y+sizeSlider.value
-  );
-  g.addColorStop(0,color1.value);
-  g.addColorStop(1,color2.value);
-  return g;
+if(mode==="mandala"){
+let cx=canvas.width/2,cy=canvas.height/2;
+let dx=x-cx,dy=y-cy;
+let segments=symmetrySlider.value;
+for(let i=0;i<segments;i++){
+let angle=2*Math.PI/segments*i;
+let px=cx+dx*Math.cos(angle)-dy*Math.sin(angle);
+let py=cy+dx*Math.sin(angle)+dy*Math.cos(angle);
+ctx.fillStyle=brush(px,py);
+
+if(mandalaStyle.value==="classic"){
+ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();
+}
+if(mandalaStyle.value==="flower"){
+ctx.beginPath();ctx.ellipse(px,py,18,8,angle,0,Math.PI*2);ctx.strokeStyle=brush(px,py);ctx.stroke();
+}
+if(mandalaStyle.value==="spiral"){
+ctx.beginPath();ctx.arc(px+i*2,py+i*2,4,0,Math.PI*2);ctx.fill();
+}
+if(mandalaStyle.value==="kaleido"){
+ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(canvas.width-px,py,6,0,Math.PI*2);ctx.fill();
+}
+if(mandalaStyle.value==="dots"){
+ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill();
+}
+}
 }
 
-function paint(x,y){
-  ctx.fillStyle=brushFill(x,y);
-  ctx.beginPath();
-  ctx.arc(x,y,sizeSlider.value,0,Math.PI*2);
-  ctx.fill();
+if(mode==="galaxy"){
+for(let i=0;i<6;i++){
+ctx.fillStyle=brush(x,y);
+ctx.beginPath();
+ctx.arc(x+Math.random()*20,y+Math.random()*20,2,0,Math.PI*2);
+ctx.fill();
+}
 }
 
-/* MANDALA */
-function mandala(x,y){
-  const cx=canvas.width/2, cy=canvas.height/2;
-  const dx=x-cx, dy=y-cy;
-  const points=12;
-  for(let i=0;i<points;i++){
-    const a=2*Math.PI/points*i;
-    paint(
-      cx+dx*Math.cos(a)-dy*Math.sin(a),
-      cy+dx*Math.sin(a)+dy*Math.cos(a)
-    );
-  }
+if(mode==="bloom"){
+for(let i=0;i<6;i++){
+ctx.strokeStyle=brush(x,y);
+ctx.beginPath();
+ctx.ellipse(x,y,20,8,i*Math.PI/3,0,Math.PI*2);
+ctx.stroke();
+}
 }
 
-/* DOODLE */
-function doodle(x,y){
-  ctx.strokeStyle=brushFill(x,y);
-  ctx.lineWidth=3;
-  ctx.beginPath();
-  const type=doodleSelect.value;
-  if(type==="ribbon") ctx.quadraticCurveTo(x,y-sizeSlider.value,x+sizeSlider.value,y);
-  if(type==="infinity") ctx.bezierCurveTo(x-sizeSlider.value,y,x,y-sizeSlider.value,x+sizeSlider.value,y);
-  if(type==="leaf") ctx.ellipse(x,y,sizeSlider.value,sizeSlider.value/2,Math.random(),0,Math.PI*2);
-  if(type==="zen") ctx.arc(x,y,sizeSlider.value/3,0,Math.PI*2);
-  ctx.stroke();
+if(mode==="silk"){
+ctx.strokeStyle=brush(x,y);
+ctx.beginPath();
+ctx.moveTo(x,y);
+ctx.quadraticCurveTo(x+20,y-20,x+40,y);
+ctx.stroke();
 }
 
-/* OTHER ARTS */
-function wave(x,y){
-  ctx.strokeStyle=brushFill(x,y);
-  ctx.beginPath();
-  ctx.moveTo(x-sizeSlider.value,y);
-  ctx.quadraticCurveTo(x,y+sizeSlider.value,x+sizeSlider.value,y);
-  ctx.stroke();
+if(mode==="orbit"){
+for(let i=0;i<6;i++){
+ctx.fillStyle=brush(x,y);
+ctx.beginPath();
+ctx.arc(x+Math.cos(i)*sizeSlider.value,y+Math.sin(i)*sizeSlider.value,4,0,Math.PI*2);
+ctx.fill();
+}
 }
 
-function orbit(x,y){
-  for(let i=0;i<6;i++){
-    ctx.fillStyle=brushFill(x,y);
-    ctx.beginPath();
-    ctx.arc(
-      x+Math.cos(i)*sizeSlider.value,
-      y+Math.sin(i)*sizeSlider.value,
-      4,0,Math.PI*2
-    );
-    ctx.fill();
-  }
+if(mode==="breathe"){
+breathPhase+=0.05;
+let r=sizeSlider.value+(Math.sin(breathPhase)*8);
+ctx.fillStyle=brush(x,y);
+ctx.beginPath();
+ctx.arc(x,y,r,0,Math.PI*2);
+ctx.fill();
 }
 
-function breathe(x,y){
-  breathPhase+=0.05;
-  const b=sizeSlider.value+(Math.sin(breathPhase)*10);
-  ctx.fillStyle=brushFill(x,y);
-  ctx.beginPath();
-  ctx.arc(x,y,b,0,Math.PI*2);
-  ctx.fill();
+if(mode==="teddy"){
+buildTeddy(x,y);
+}
 }
 
-/* ACTIONS */
+function buildTeddy(x,y){
+ctx.fillStyle="#a16207";
+if(teddyStage===0){ctx.beginPath();ctx.arc(x,y,40,0,Math.PI*2);ctx.fill();}
+if(teddyStage===1){
+ctx.beginPath();ctx.arc(x-30,y-40,20,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(x+30,y-40,20,0,Math.PI*2);ctx.fill();
+}
+if(teddyStage===2){
+ctx.fillStyle="#000";
+ctx.beginPath();ctx.arc(x-15,y-5,6,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(x+15,y-5,6,0,Math.PI*2);ctx.fill();
+}
+if(teddyStage===3){
+ctx.fillStyle="#000";
+ctx.beginPath();ctx.arc(x,y+10,8,0,Math.PI*2);ctx.fill();
+}
+teddyStage=(teddyStage+1)%4;
+}
+
 function undo(){
-  if(!history.length) return;
-  const img=new Image();
-  img.src=history.pop();
-  img.onload=()=>ctx.drawImage(img,0,0);
-}
-
-const music=document.getElementById("bgMusic");
-let playing=false;
-function toggleMusic(){
-  playing ? music.pause() : music.play();
-  playing=!playing;
+if(!history.length)return;
+let img=new Image();
+img.src=history.pop();
+img.onload=()=>ctx.drawImage(img,0,0);
 }
 
 function resetCanvas(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  history=[];
+ctx.clearRect(0,0,canvas.width,canvas.height);
+history=[];
+teddyStage=0;
 }
 
-/* SAVE + GALLERY */
 function saveArt(){
-  const data=canvas.toDataURL("image/png");
-  addToGallery(data);
-
-  let saved=JSON.parse(localStorage.getItem("khushiGallery")||"[]");
-  saved.unshift(data);
-  localStorage.setItem("khushiGallery",JSON.stringify(saved));
+let data=canvas.toDataURL();
+let img=document.createElement("img");
+img.src=data;
+img.onclick=()=>window.open(data);
+gallery.prepend(img);
 }
 
-function addToGallery(data){
-  const img=document.createElement("img");
-  img.src=data;
-  img.onclick=()=>window.open(data,"_blank");
-  document.getElementById("gallery").prepend(img);
+function exportSticker(){
+let temp=document.createElement("canvas");
+temp.width=canvas.width;
+temp.height=canvas.height;
+let tctx=temp.getContext("2d");
+tctx.drawImage(canvas,0,0);
+let link=document.createElement("a");
+link.download="sticker.png";
+link.href=temp.toDataURL("image/png");
+link.click();
 }
 
-/* LOAD GALLERY */
-window.onload=()=>{
-  const saved=JSON.parse(localStorage.getItem("khushiGallery")||"[]");
-  saved.forEach(addToGallery);
-};
+const music=document.getElementById("music");
+let playing=false;
+function toggleMusic(){playing?music.pause():music.play();playing=!playing;}
+
+const challenges=[
+"Draw something that feels safe.",
+"Create a peaceful mandala.",
+"Build your own teddy.",
+"Make a galaxy of dreams.",
+"Draw your calm energy."
+];
+challenge.innerText="🖌 "+challenges[new Date().getDate()%challenges.length];
 </script>
 
 </body>
