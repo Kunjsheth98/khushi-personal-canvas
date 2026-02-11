@@ -2,40 +2,50 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Khushi Mode</title>
+<title>Khushi Mode Pro</title>
+
 <style>
 body{
 margin:0;
 font-family:system-ui;
 background:linear-gradient(135deg,#f3e8ff,#ffffff);
 text-align:center;
-padding:12px;
+padding:14px;
+transition:0.3s;
 }
-h1{color:#6d28d9;margin:4px;}
-#modeDisplay{font-weight:600;color:#7c3aed;margin-bottom:6px;}
-#challenge{margin-bottom:8px;color:#444;font-size:14px;}
+h1{color:#6d28d9;margin:6px;}
+#modeDisplay{font-weight:600;color:#7c3aed;margin-bottom:8px;}
+
 .bar{
 display:flex;
 flex-wrap:wrap;
 justify-content:center;
 gap:8px;
-margin-bottom:8px;
+margin-bottom:10px;
 }
-button,input,select{
-padding:8px 12px;
+
+button{
+padding:8px 14px;
 border-radius:18px;
 border:none;
 background:#ede9fe;
+cursor:pointer;
 font-size:13px;
+transition:0.2s;
 }
+button.active{
+background:#c4b5fd;
+}
+
 canvas{
 background:#fff;
-border-radius:26px;
+border-radius:24px;
 box-shadow:0 10px 28px rgba(0,0,0,0.08);
-touch-action:none;
 display:block;
-margin:10px auto;
+margin:12px auto;
+touch-action:none;
 }
+
 #gallery{
 display:flex;
 gap:8px;
@@ -54,88 +64,125 @@ cursor:pointer;
 
 <h1>KHUSHI MODE</h1>
 <div id="modeDisplay">Mode: Paint</div>
-<div id="challenge"></div>
 
-<div class="bar">
-<button onclick="setMode('paint')">🎨</button>
-<button onclick="setMode('mandala')">🌀</button>
-<button onclick="setMode('doodle')">✏️</button>
-<button onclick="setMode('galaxy')">🌌</button>
-<button onclick="setMode('bloom')">🌺</button>
-<button onclick="setMode('silk')">🧵</button>
-<button onclick="setMode('orbit')">🧬</button>
-<button onclick="setMode('breathe')">🌬️</button>
-<button onclick="setMode('teddy')">🧸</button>
-</div>
+<div class="bar" id="modeBar"></div>
+<div class="bar" id="styleBar"></div>
 
 <div class="bar">
 <input type="color" id="c1" value="#8b5cf6">
 <input type="color" id="c2" value="#ec4899">
-<button onclick="toggleGradient()">🌈</button>
-<input type="range" id="size" min="4" max="60" value="20">
+<button onclick="toggleGradient()">Gradient</button>
+<input type="range" id="size" min="4" max="50" value="16">
+<input type="range" id="symmetry" min="4" max="24" value="12">
 </div>
 
 <div class="bar">
-<input type="range" id="symmetry" min="4" max="24" value="12">
-<span>Symmetry</span>
-<select id="mandalaStyle">
-<option value="classic">Classic</option>
-<option value="flower">Flower</option>
-<option value="spiral">Spiral</option>
-<option value="kaleido">Kaleido</option>
-<option value="dots">Dots</option>
+<select onchange="setTheme(this.value)">
+<option value="lavender">Lavender Glow</option>
+<option value="peach">Soft Peach</option>
+<option value="white">Clean White</option>
+<option value="night">Night Calm</option>
+<option value="studio">Studio Gray</option>
 </select>
 </div>
 
 <canvas id="canvas"></canvas>
 
 <div class="bar">
-<button onclick="undo()">↩</button>
-<button onclick="toggleMusic()">🎵</button>
-<button onclick="resetCanvas()">♻</button>
-<button onclick="saveArt()">💾</button>
-<button onclick="exportSticker()">🎟 Sticker</button>
+<button onclick="undo()">Undo</button>
+<button onclick="resetCanvas()">Reset</button>
+<button onclick="saveArt()">Save</button>
+<button onclick="exportSticker()">Sticker</button>
 </div>
 
 <div id="gallery"></div>
-
-<audio id="music" loop>
-<source src="music.mp3">
-</audio>
 
 <script>
 const canvas=document.getElementById("canvas");
 const ctx=canvas.getContext("2d");
 
 function resize(){
-let size=Math.min(window.innerWidth*0.92,520);
-canvas.width=size;
-canvas.height=size;
+let s=Math.min(window.innerWidth*0.9,520);
+canvas.width=s;
+canvas.height=s;
 }
 resize();
 window.addEventListener("resize",resize);
 
-let drawing=false,mode="paint",history=[];
-let gradient=true,teddyStage=0,breathPhase=0;
+let drawing=false;
+let currentMode="paint";
+let currentStyle="";
+let gradient=true;
+let history=[];
+let teddyStep=0;
 
 const c1=document.getElementById("c1");
 const c2=document.getElementById("c2");
 const sizeSlider=document.getElementById("size");
 const symmetrySlider=document.getElementById("symmetry");
-const mandalaStyle=document.getElementById("mandalaStyle");
+
+const modes={
+paint:["Soft","Glow"],
+mandala:["Classic","Flower","Dots"],
+doodle:["Infinity","Zen"],
+galaxy:["Spiral","Dust","Burst"],
+teddy:["Classic","Chubby","Panda","Pastel","Sleepy"]
+};
+
+function buildUI(){
+const mb=document.getElementById("modeBar");
+mb.innerHTML="";
+Object.keys(modes).forEach(m=>{
+let b=document.createElement("button");
+b.innerText=m;
+b.onclick=()=>setMode(m);
+if(m===currentMode)b.classList.add("active");
+mb.appendChild(b);
+});
+buildStyles();
+}
+
+function buildStyles(){
+const sb=document.getElementById("styleBar");
+sb.innerHTML="";
+modes[currentMode].forEach(s=>{
+let b=document.createElement("button");
+b.innerText=s;
+b.onclick=()=>setStyle(s);
+if(s===currentStyle)b.classList.add("active");
+sb.appendChild(b);
+});
+}
 
 function setMode(m){
-mode=m;
+currentMode=m;
+currentStyle=modes[m][0];
 modeDisplay.innerText="Mode: "+m;
+buildUI();
 }
+
+function setStyle(s){
+currentStyle=s;
+buildStyles();
+}
+
+buildUI();
 
 function toggleGradient(){gradient=!gradient;}
 
-function getPos(e){
-const rect=canvas.getBoundingClientRect();
+function brush(x,y){
+if(!gradient)return c1.value;
+let g=ctx.createLinearGradient(x-20,y-20,x+20,y+20);
+g.addColorStop(0,c1.value);
+g.addColorStop(1,c2.value);
+return g;
+}
+
+function pos(e){
+let r=canvas.getBoundingClientRect();
 return{
-x:(e.touches?e.touches[0].clientX:e.clientX)-rect.left,
-y:(e.touches?e.touches[0].clientY:e.clientY)-rect.top
+x:(e.touches?e.touches[0].clientX:e.clientX)-r.left,
+y:(e.touches?e.touches[0].clientY:e.clientY)-r.top
 };
 }
 
@@ -146,120 +193,82 @@ canvas.addEventListener("touchstart",e=>{drawing=true;history.push(canvas.toData
 canvas.addEventListener("touchmove",draw,{passive:false});
 canvas.addEventListener("touchend",()=>drawing=false);
 
-function brush(x,y){
-if(!gradient)return c1.value;
-let g=ctx.createLinearGradient(x-30,y-30,x+30,y+30);
-g.addColorStop(0,c1.value);
-g.addColorStop(1,c2.value);
-return g;
-}
-
 function draw(e){
 if(!drawing)return;
-let {x,y}=getPos(e);
-
-if(mode==="paint"){
+let {x,y}=pos(e);
 ctx.fillStyle=brush(x,y);
+
+if(currentMode==="paint"){
 ctx.beginPath();
 ctx.arc(x,y,sizeSlider.value,0,Math.PI*2);
 ctx.fill();
 }
 
-if(mode==="mandala"){
+if(currentMode==="mandala"){
 let cx=canvas.width/2,cy=canvas.height/2;
 let dx=x-cx,dy=y-cy;
-let segments=symmetrySlider.value;
-for(let i=0;i<segments;i++){
-let angle=2*Math.PI/segments*i;
-let px=cx+dx*Math.cos(angle)-dy*Math.sin(angle);
-let py=cy+dx*Math.sin(angle)+dy*Math.cos(angle);
-ctx.fillStyle=brush(px,py);
-
-if(mandalaStyle.value==="classic"){
-ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();
-}
-if(mandalaStyle.value==="flower"){
-ctx.beginPath();ctx.ellipse(px,py,18,8,angle,0,Math.PI*2);ctx.strokeStyle=brush(px,py);ctx.stroke();
-}
-if(mandalaStyle.value==="spiral"){
-ctx.beginPath();ctx.arc(px+i*2,py+i*2,4,0,Math.PI*2);ctx.fill();
-}
-if(mandalaStyle.value==="kaleido"){
-ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fill();
-ctx.beginPath();ctx.arc(canvas.width-px,py,6,0,Math.PI*2);ctx.fill();
-}
-if(mandalaStyle.value==="dots"){
-ctx.beginPath();ctx.arc(px,py,3,0,Math.PI*2);ctx.fill();
-}
-}
-}
-
-if(mode==="galaxy"){
-for(let i=0;i<6;i++){
-ctx.fillStyle=brush(x,y);
+let seg=symmetrySlider.value;
+for(let i=0;i<seg;i++){
+let a=2*Math.PI/seg*i;
+let px=cx+dx*Math.cos(a)-dy*Math.sin(a);
+let py=cy+dx*Math.sin(a)+dy*Math.cos(a);
 ctx.beginPath();
-ctx.arc(x+Math.random()*20,y+Math.random()*20,2,0,Math.PI*2);
+if(currentStyle==="Classic")
+ctx.arc(px,py,5,0,Math.PI*2);
+if(currentStyle==="Flower")
+ctx.ellipse(px,py,18,8,a,0,Math.PI*2);
+if(currentStyle==="Dots")
+ctx.arc(px,py,3,0,Math.PI*2);
 ctx.fill();
 }
 }
 
-if(mode==="bloom"){
+if(currentMode==="galaxy"){
+if(currentStyle==="Spiral"){
 for(let i=0;i<6;i++){
-ctx.strokeStyle=brush(x,y);
 ctx.beginPath();
-ctx.ellipse(x,y,20,8,i*Math.PI/3,0,Math.PI*2);
-ctx.stroke();
-}
-}
-
-if(mode==="silk"){
-ctx.strokeStyle=brush(x,y);
-ctx.beginPath();
-ctx.moveTo(x,y);
-ctx.quadraticCurveTo(x+20,y-20,x+40,y);
-ctx.stroke();
-}
-
-if(mode==="orbit"){
-for(let i=0;i<6;i++){
-ctx.fillStyle=brush(x,y);
-ctx.beginPath();
-ctx.arc(x+Math.cos(i)*sizeSlider.value,y+Math.sin(i)*sizeSlider.value,4,0,Math.PI*2);
+ctx.arc(x+Math.cos(i)*20,y+Math.sin(i)*20,3,0,Math.PI*2);
 ctx.fill();
 }
 }
-
-if(mode==="breathe"){
-breathPhase+=0.05;
-let r=sizeSlider.value+(Math.sin(breathPhase)*8);
-ctx.fillStyle=brush(x,y);
+if(currentStyle==="Dust"){
 ctx.beginPath();
-ctx.arc(x,y,r,0,Math.PI*2);
+ctx.arc(x+Math.random()*10,y+Math.random()*10,2,0,Math.PI*2);
 ctx.fill();
 }
+if(currentStyle==="Burst"){
+for(let i=0;i<8;i++){
+ctx.beginPath();
+ctx.arc(x+Math.random()*30-15,y+Math.random()*30-15,2,0,Math.PI*2);
+ctx.fill();
+}
+}
+}
 
-if(mode==="teddy"){
-buildTeddy(x,y);
+if(currentMode==="teddy"){
+drawTeddy(x,y);
 }
 }
 
-function buildTeddy(x,y){
-ctx.fillStyle="#a16207";
-if(teddyStage===0){ctx.beginPath();ctx.arc(x,y,40,0,Math.PI*2);ctx.fill();}
-if(teddyStage===1){
-ctx.beginPath();ctx.arc(x-30,y-40,20,0,Math.PI*2);ctx.fill();
-ctx.beginPath();ctx.arc(x+30,y-40,20,0,Math.PI*2);ctx.fill();
+function drawTeddy(x,y){
+ctx.fillStyle=currentStyle==="Panda"?"#000":brush(x,y);
+
+if(teddyStep===0){
+ctx.beginPath();ctx.arc(x,y,35,0,Math.PI*2);ctx.fill();
 }
-if(teddyStage===2){
+if(teddyStep===1){
+ctx.beginPath();ctx.arc(x-25,y-30,18,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(x+25,y-30,18,0,Math.PI*2);ctx.fill();
+}
+if(teddyStep===2){
 ctx.fillStyle="#000";
-ctx.beginPath();ctx.arc(x-15,y-5,6,0,Math.PI*2);ctx.fill();
-ctx.beginPath();ctx.arc(x+15,y-5,6,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(x-12,y-5,5,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.arc(x+12,y-5,5,0,Math.PI*2);ctx.fill();
 }
-if(teddyStage===3){
-ctx.fillStyle="#000";
-ctx.beginPath();ctx.arc(x,y+10,8,0,Math.PI*2);ctx.fill();
+if(teddyStep===3){
+ctx.beginPath();ctx.arc(x,y+8,6,0,Math.PI*2);ctx.fill();
 }
-teddyStage=(teddyStage+1)%4;
+teddyStep=(teddyStep+1)%4;
 }
 
 function undo(){
@@ -272,7 +281,7 @@ img.onload=()=>ctx.drawImage(img,0,0);
 function resetCanvas(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 history=[];
-teddyStage=0;
+teddyStep=0;
 }
 
 function saveArt(){
@@ -284,29 +293,19 @@ gallery.prepend(img);
 }
 
 function exportSticker(){
-let temp=document.createElement("canvas");
-temp.width=canvas.width;
-temp.height=canvas.height;
-let tctx=temp.getContext("2d");
-tctx.drawImage(canvas,0,0);
 let link=document.createElement("a");
 link.download="sticker.png";
-link.href=temp.toDataURL("image/png");
+link.href=canvas.toDataURL("image/png");
 link.click();
 }
 
-const music=document.getElementById("music");
-let playing=false;
-function toggleMusic(){playing?music.pause():music.play();playing=!playing;}
-
-const challenges=[
-"Draw something that feels safe.",
-"Create a peaceful mandala.",
-"Build your own teddy.",
-"Make a galaxy of dreams.",
-"Draw your calm energy."
-];
-challenge.innerText="🖌 "+challenges[new Date().getDate()%challenges.length];
+function setTheme(t){
+if(t==="lavender")document.body.style.background="linear-gradient(135deg,#f3e8ff,#ffffff)";
+if(t==="peach")document.body.style.background="linear-gradient(135deg,#ffe4e6,#ffffff)";
+if(t==="white")document.body.style.background="#ffffff";
+if(t==="night")document.body.style.background="linear-gradient(135deg,#1e1b4b,#312e81)";
+if(t==="studio")document.body.style.background="#e5e7eb";
+}
 </script>
 
 </body>
